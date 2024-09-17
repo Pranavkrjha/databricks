@@ -1,18 +1,17 @@
-WITH silver_data AS (
-  SELECT * FROM {{ ref('cleaned_silver') }} --data ingestion from silver table
+WITH cleaned_data AS (
+    SELECT * FROM {{ ref('cleaned_silver') }}
 )
-
-SELECT
-  InvoiceDay,
-  COUNT(DISTINCT Invoice_Num) AS TotalNumberOfInvoices, 
-  COUNT(DISTINCT Customer_ID) AS TotalNumberOfCustomers,
-  SUM(Quantity) AS TotalQuantity,
-  SUM(TotalAmount) AS Total_Sales_Revenue,
-  AVG(TotalAmount) AS AverageValueOfOrder,
-  COUNT(DISTINCT StockCode) AS NumberOfDifferentItems
-FROM silver_data
-GROUP BY InvoiceDay
-ORDER BY InvoiceDay;
-
-{{ config(materialized='table') }}
+    SELECT
+        Invoice,
+        StockCode,
+        Description,
+        SUM(Quantity) AS TotalQuantity,
+        SUM(Price * Quantity) AS TotalRevenue,
+        MAX(InvoiceDate) AS LatestInvoiceDate,
+        MIN(InvoiceDate) AS EarliestInvoiceDate,
+        COUNT(*) AS TotalOrders,
+        AVG(Quantity) AS AverageOrderQuantity,
+        AVG(Price * Quantity) AS AverageOrderValue
+    FROM cleaned_data
+    GROUP BY Invoice, StockCode, Description
 

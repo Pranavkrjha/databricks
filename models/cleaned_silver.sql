@@ -1,35 +1,18 @@
--- Materialize the result as a table
-{{ config(materialized='table') }}
-
--- Data ingestion from the bronze layer
-WITH source_data AS (
-  SELECT * FROM {{ ref('bronze_retail') }}
+WITH silver_retail AS (
+    SELECT * FROM {{ ref('bronze_retail') }}  -- Reference the bronze table in dbt
 ),
-
-cleaned_data AS (
+silver_data AS (
   SELECT
-    Invoice_Num,
+    Invoice, -- Rename the Invoice column to Invoice_Num for clarity
     StockCode,
     Description,
-    CAST(Quantity AS INT) AS Quantity,
+    COALESCE(Quantity, 0) AS Quantity, -- Handle missing quantity values
+    CASE WHEN Price <= 0 THEN NULL ELSE Price END AS Price, -- Handle invalid prices
     TO_TIMESTAMP(InvoiceDate, 'dd-MM-yyyy HH:mm') AS InvoiceDate,
-    CAST(Price AS DECIMAL(10, 2)) AS Price,
     CAST(Customer_ID AS INT) AS Customer_ID,
     TRIM(Country) AS Country
-  FROM source_data
-  WHERE Invoice_Num IS NOT NULL
-    AND Quantity > 0
-    AND Price > 0
-),
-
-enriched_data AS (
-  SELECT
-    *,
-    CAST(Quantity * Price AS DECIMAL(10, 2)) AS TotalAmount,
-    DATE(InvoiceDate) AS InvoiceDay,
-    YEAR(InvoiceDate) AS InvoiceYear,
-    MONTH(InvoiceDate) AS InvoiceMonth
-  FROM cleaned_data
+  FROM silver_retail
+  WHERE Invoice IS NOT NULL
 )
 
-SELECT * FROM enriched_data;
+SELECT * FROM silver_data;

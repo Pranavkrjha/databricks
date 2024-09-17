@@ -1,5 +1,5 @@
 SELECT
-    Invoice AS Invoice_Num, -- Rename the Invoice column to Invoice_Num for clarity
+    Invoice, -- Rename the Invoice column to Invoice_Num for clarity
     StockCode,
     Description,
     Quantity,
